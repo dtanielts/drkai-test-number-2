@@ -47,6 +47,9 @@ async function startServer() {
   const PORT = 3000;
 
   console.log("--- Server Starting ---");
+  console.log(`Current directory: ${process.cwd()}`);
+  console.log(`__dirname: ${__dirname}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
   
   app.use(cors());
   app.use(express.json());
@@ -174,9 +177,18 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     // Serve static files in production
-    app.use(express.static(path.join(__dirname, "dist")));
+    const distPath = path.join(__dirname, "dist");
+    console.log(`Serving static files from: ${distPath}`);
+    
+    if (dbPath.includes('home')) {
+       // We are likely in the container environment
+       console.log("Detected container environment");
+    }
+
+    app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
+      console.log(`Fallback route hit for: ${req.url}`);
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 

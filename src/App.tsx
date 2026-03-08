@@ -362,6 +362,10 @@ const BetaSignupModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => 
             errorMessage = typeof data.error === 'string' 
               ? data.error 
               : JSON.stringify(data.error);
+          } else if (data.message) {
+            errorMessage = data.message;
+          } else {
+            errorMessage = JSON.stringify(data);
           }
         } catch (e) {
           // If body is not JSON, use the status text
@@ -1045,6 +1049,10 @@ const SignupLookup = () => {
             errorMessage = typeof data.error === 'string' 
               ? data.error 
               : JSON.stringify(data.error);
+          } else if (data.message) {
+            errorMessage = data.message;
+          } else {
+            errorMessage = JSON.stringify(data);
           }
         } catch (e) {
           errorMessage = `Server error: ${res.status} ${res.statusText}`;
