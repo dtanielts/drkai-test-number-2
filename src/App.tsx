@@ -103,10 +103,19 @@ const AdminDashboard = ({ onClose }: { onClose: () => void }) => {
   const [signups, setSignups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<any>(null);
 
   console.log("AdminDashboard: Rendering, isAdminOpen is true");
 
   useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) setServerStatus(await res.json());
+      } catch (e) {
+        console.error("Health check failed", e);
+      }
+    };
     const fetchSignups = async () => {
       console.log("AdminDashboard: Fetching signups...");
       try {
@@ -122,6 +131,7 @@ const AdminDashboard = ({ onClose }: { onClose: () => void }) => {
         setIsLoading(false);
       }
     };
+    checkServer();
     fetchSignups();
   }, []);
 
@@ -152,10 +162,22 @@ const AdminDashboard = ({ onClose }: { onClose: () => void }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-brand-50 p-4 rounded-2xl border border-brand-100">
               <p className="text-brand-900 text-[10px] font-bold uppercase tracking-widest mb-1">Total Signups</p>
               <p className="text-3xl font-bold text-brand-600">{signups.length}</p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p className="text-slate-900 text-[10px] font-bold uppercase tracking-widest mb-1">Server Status</p>
+              <div className="flex items-center gap-2 mt-2">
+                <div className={`w-2 h-2 rounded-full ${serverStatus ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
+                <p className="text-sm font-bold text-slate-700">
+                  {serverStatus ? 'Online' : 'Offline'}
+                </p>
+              </div>
+              {serverStatus && (
+                <p className="text-[9px] text-slate-400 mt-1 font-mono">{serverStatus.time}</p>
+              )}
             </div>
             <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 lg:col-span-2">
               <p className="text-emerald-900 text-[10px] font-bold uppercase tracking-widest mb-1">Google Sheets Integration</p>

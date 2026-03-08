@@ -1,6 +1,5 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
@@ -10,37 +9,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Database
-let db: Database.Database;
+let db: any;
 const dbPath = path.join(__dirname, "signups.db");
-console.log(`Initializing database at: ${dbPath}`);
-
-try {
-  db = new Database(dbPath);
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS signups (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      role TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  console.log("Database initialized successfully");
-} catch (err: any) {
-  console.error("Failed to initialize database:", err);
-  // Fallback to in-memory if file fails (for debugging)
-  console.log("Falling back to in-memory database");
-  db = new Database(":memory:");
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS signups (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      role TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-}
+console.log(`Database path: ${dbPath}`);
 
 async function startServer() {
   const app = express();
@@ -50,6 +21,50 @@ async function startServer() {
   console.log(`Current directory: ${process.cwd()}`);
   console.log(`__dirname: ${__dirname}`);
   console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+
+  // Initialize Database inside startServer to catch errors during startup
+  try {
+    console.log(`Initializing database at: ${dbPath}`);
+    const { default: Database } = await import("better-sqlite3");
+    db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS signups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        role TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Database initialized successfully");
+  } catch (err: any) {
+    console.error("Failed to initialize database:", err);
+    console.log("Falling back to in-memory database");
+    try {
+      const { default: Database } = await import("better-sqlite3");
+      db = new Database(":memory:");
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS signups (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          role TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    } catch (innerErr: any) {
+      console.error("Critical: Failed to load better-sqlite3 even for in-memory:", innerErr);
+      // Last resort: mock DB object to prevent crashes
+      db = {
+        prepare: () => ({
+          run: () => ({ lastInsertRowid: Date.now() }),
+          get: () => null,
+          all: () => []
+        }),
+        exec: () => {}
+      };
+    }
+  }
   
   app.use(cors());
   app.use(express.json());
@@ -59,6 +74,17 @@ async function startServer() {
   app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
+  });
+
+  // Root debug route
+  app.get("/api/debug-server", (req, res) => {
+    res.json({
+      message: "Server is alive",
+      time: new Date().toISOString(),
+      env: process.env.NODE_ENV,
+      cwd: process.cwd(),
+      db: db ? "initialized" : "null"
+    });
   });
 
   // Health check
