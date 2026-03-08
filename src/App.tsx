@@ -357,7 +357,12 @@ const BetaSignupModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => 
         let errorMessage = 'Something went wrong';
         try {
           const data = await response.json();
-          errorMessage = data.error || errorMessage;
+          console.log('Error response data:', data);
+          if (data.error) {
+            errorMessage = typeof data.error === 'string' 
+              ? data.error 
+              : JSON.stringify(data.error);
+          }
         } catch (e) {
           // If body is not JSON, use the status text
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -367,7 +372,9 @@ const BetaSignupModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => 
 
       setIsSubmitted(true);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Signup error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -1033,7 +1040,12 @@ const SignupLookup = () => {
         let errorMessage = "Signup not found";
         try {
           const data = await res.json();
-          errorMessage = data.error || errorMessage;
+          console.log('Lookup error data:', data);
+          if (data.error) {
+            errorMessage = typeof data.error === 'string' 
+              ? data.error 
+              : JSON.stringify(data.error);
+          }
         } catch (e) {
           errorMessage = `Server error: ${res.status} ${res.statusText}`;
         }
@@ -1042,7 +1054,9 @@ const SignupLookup = () => {
       const data = await res.json();
       setResult(data);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Lookup error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

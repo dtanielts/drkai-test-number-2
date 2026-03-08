@@ -11,8 +11,11 @@ const __dirname = path.dirname(__filename);
 
 // Initialize Database
 let db: Database.Database;
+const dbPath = path.join(__dirname, "signups.db");
+console.log(`Initializing database at: ${dbPath}`);
+
 try {
-  db = new Database("signups.db");
+  db = new Database(dbPath);
   db.exec(`
     CREATE TABLE IF NOT EXISTS signups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,9 +26,10 @@ try {
     )
   `);
   console.log("Database initialized successfully");
-} catch (err) {
+} catch (err: any) {
   console.error("Failed to initialize database:", err);
   // Fallback to in-memory if file fails (for debugging)
+  console.log("Falling back to in-memory database");
   db = new Database(":memory:");
   db.exec(`
     CREATE TABLE IF NOT EXISTS signups (
