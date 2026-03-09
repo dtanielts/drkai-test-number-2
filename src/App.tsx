@@ -25,255 +25,6 @@ import { motion, AnimatePresence } from 'motion/react';
 
 // --- Components ---
 
-const AdminPasswordModal = ({ isOpen, onClose, onAuthenticated }: { isOpen: boolean, onClose: () => void, onAuthenticated: () => void }) => {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password.trim().toLowerCase() === 'admin123') {
-      onAuthenticated();
-      setPassword('');
-      setError(false);
-    } else {
-      setError(true);
-      setPassword('');
-    }
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-8"
-          >
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Admin Access</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">Password</label>
-                <input 
-                  type="password" 
-                  autoFocus
-                  required
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError(false);
-                  }}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-2 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all ${error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-brand-500'}`}
-                />
-                {error && <p className="text-red-500 text-[10px] mt-1 font-bold">Incorrect password</p>}
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-2 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 py-2 bg-brand-600 text-white rounded-xl font-bold text-sm hover:bg-brand-700 transition-all shadow-md shadow-brand-500/20"
-                >
-                  Login
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-};
-
-const AdminDashboard = ({ onClose }: { onClose: () => void }) => {
-  const [signups, setSignups] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [serverStatus, setServerStatus] = useState<any>(null);
-
-  console.log("AdminDashboard: Rendering, isAdminOpen is true");
-
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        const res = await fetch('/api/health');
-        if (res.ok) setServerStatus(await res.json());
-      } catch (e) {
-        console.error("Health check failed", e);
-      }
-    };
-    const fetchSignups = async () => {
-      console.log("AdminDashboard: Fetching signups...");
-      try {
-        const res = await fetch('/api/admin/signups');
-        if (!res.ok) throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-        const data = await res.json();
-        console.log("AdminDashboard: Fetched signups:", data.length);
-        setSignups(data);
-      } catch (err: any) {
-        console.error("AdminDashboard: Fetch error:", err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkServer();
-    fetchSignups();
-  }, []);
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6"
-    >
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white w-full max-w-4xl max-h-[85vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl"
-      >
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Admin Dashboard</h2>
-            <p className="text-slate-500 text-sm">Manage beta signups and integrations</p>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6 text-slate-500" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-brand-50 p-4 rounded-2xl border border-brand-100">
-              <p className="text-brand-900 text-[10px] font-bold uppercase tracking-widest mb-1">Total Signups</p>
-              <p className="text-3xl font-bold text-brand-600">{signups.length}</p>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <p className="text-slate-900 text-[10px] font-bold uppercase tracking-widest mb-1">Server Status</p>
-              <div className="flex items-center gap-2 mt-2">
-                <div className={`w-2 h-2 rounded-full ${serverStatus ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
-                <p className="text-sm font-bold text-slate-700">
-                  {serverStatus ? 'Online' : 'Offline'}
-                </p>
-              </div>
-              {serverStatus && (
-                <p className="text-[9px] text-slate-400 mt-1 font-mono">{serverStatus.time}</p>
-              )}
-            </div>
-            <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 lg:col-span-2">
-              <p className="text-emerald-900 text-[10px] font-bold uppercase tracking-widest mb-1">Google Sheets Integration</p>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${process.env.GOOGLE_FORM_URL ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                <p className="text-sm font-medium text-emerald-700">
-                  {process.env.GOOGLE_FORM_URL ? 'Connected via Google Form' : 'Not configured'}
-                </p>
-              </div>
-              {!process.env.GOOGLE_FORM_URL && (
-                <p className="text-[10px] text-emerald-600 mt-1">Configure environment variables to sync data automatically.</p>
-              )}
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium">
-              Error: {error}
-            </div>
-          ) : (
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Database className="w-4 h-4" /> Recent Signups
-                </h3>
-                <div className="overflow-x-auto rounded-2xl border border-slate-100">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100">
-                        <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
-                        <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</th>
-                        <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role</th>
-                        <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {signups.map((s) => (
-                        <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                          <td className="p-4 text-sm font-medium text-slate-900">{s.name}</td>
-                          <td className="p-4 text-sm text-slate-600">{s.email}</td>
-                          <td className="p-4">
-                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                              s.role === 'patient' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
-                            }`}>
-                              {s.role}
-                            </span>
-                          </td>
-                          <td className="p-4 text-xs text-slate-400">
-                            {new Date(s.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                      {signups.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="p-8 text-center text-slate-400 italic text-sm">
-                            No signups yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> Setup Google Sheets Sync
-                </h3>
-                <div className="space-y-4 text-sm text-slate-600">
-                  <p>To automatically sync new signups to a Google Sheet:</p>
-                  <ol className="list-decimal list-inside space-y-2 ml-2">
-                    <li>Create a <strong>Google Form</strong> with 3 short answer questions: Name, Email, Role.</li>
-                    <li>In the Form, go to <strong>Responses</strong> and click <strong>Link to Sheets</strong>.</li>
-                    <li>Get the <strong>Pre-filled link</strong> (from the 3-dot menu) to find your entry IDs.</li>
-                    <li>Set these <strong>Environment Variables</strong> in AI Studio:</li>
-                  </ol>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 font-mono text-[10px] space-y-1">
-                    <p className="text-brand-600">GOOGLE_FORM_URL=<span className="text-slate-400">https://docs.google.com/forms/d/.../viewform</span></p>
-                    <p className="text-brand-600">GOOGLE_FORM_NAME_ENTRY_ID=<span className="text-slate-400">123456789</span></p>
-                    <p className="text-brand-600">GOOGLE_FORM_EMAIL_ENTRY_ID=<span className="text-slate-400">987654321</span></p>
-                    <p className="text-brand-600">GOOGLE_FORM_ROLE_ENTRY_ID=<span className="text-slate-400">456789123</span></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
-
 const Navbar = ({ onSignup }: { onSignup: () => void }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -1046,112 +797,8 @@ const FinalCTA = ({ onSignup }: { onSignup: () => void }) => {
 
 // --- Main App ---
 
-const SignupLookup = () => {
-  const [email, setEmail] = useState('');
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleLookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    
-    setIsLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const res = await fetch(`/api/lookup/${encodeURIComponent(email)}`);
-      if (!res.ok) {
-        let errorMessage = "Signup not found";
-        try {
-          const data = await res.json();
-          console.log('Lookup error data:', data);
-          if (data.error) {
-            errorMessage = typeof data.error === 'string' 
-              ? data.error 
-              : JSON.stringify(data.error);
-          } else if (data.message) {
-            errorMessage = data.message;
-          } else {
-            errorMessage = JSON.stringify(data);
-          }
-        } catch (e) {
-          errorMessage = `Server error: ${res.status} ${res.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-      const data = await res.json();
-      setResult(data);
-    } catch (err: any) {
-      console.error('Lookup error:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-      <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-        <Database className="w-5 h-5 text-brand-600" />
-        Lookup Signup
-      </h3>
-      <p className="text-sm text-slate-500 mb-6">Enter an email address to retrieve the signup data.</p>
-      
-      <form onSubmit={handleLookup} className="flex gap-2 mb-6">
-        <input 
-          type="email" 
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm"
-        />
-        <button 
-          type="submit"
-          disabled={isLoading}
-          className="bg-brand-600 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-brand-700 transition-all disabled:opacity-50"
-        >
-          {isLoading ? "..." : "Lookup"}
-        </button>
-      </form>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl font-medium">
-          {error}
-        </div>
-      )}
-
-      {result && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-brand-50 border border-brand-100 rounded-2xl space-y-2"
-        >
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Name</span>
-            <span className="text-sm font-bold text-slate-900">{result.name}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role</span>
-            <span className="text-xs bg-white px-2 py-0.5 rounded-full border border-brand-200 text-brand-700 font-bold uppercase">{result.role}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Signed Up</span>
-            <span className="text-xs text-slate-500">{new Date(result.created_at).toLocaleDateString()}</span>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
 export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const checkHealth = async () => {
@@ -1165,12 +812,6 @@ export default function App() {
     };
     checkHealth();
   }, []);
-
-  const handleAdminClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    console.log("Admin link clicked, opening auth modal");
-    setIsAuthModalOpen(true);
-  };
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -1190,7 +831,7 @@ export default function App() {
       </main>
       <footer className="bg-slate-50 py-12 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-start mb-12">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-12 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-6">
                 <Stethoscope className="text-brand-600 w-6 h-6" />
@@ -1200,40 +841,17 @@ export default function App() {
                 The future of healthcare coordination. Empowering patients with AI-driven insights and organized medical history.
               </p>
             </div>
-            <SignupLookup />
           </div>
           <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-slate-400 text-sm">© 2026 Dr. KAI. All rights reserved.</div>
             <div className="flex gap-6">
               <a href="#" className="text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-brand-600 transition-colors">Privacy Policy</a>
               <a href="#" className="text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-brand-600 transition-colors">Terms of Service</a>
-              <a 
-                href="#" 
-                onClick={handleAdminClick}
-                className="text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-brand-600 transition-colors"
-              >
-                Admin
-              </a>
             </div>
           </div>
         </div>
       </footer>
       <BetaSignupModal isOpen={isModalOpen} onClose={closeModal} />
-      
-      <AdminPasswordModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)}
-        onAuthenticated={() => {
-          setIsAuthModalOpen(false);
-          setIsAdminOpen(true);
-        }}
-      />
-
-      <AnimatePresence>
-        {isAdminOpen && (
-          <AdminDashboard onClose={() => setIsAdminOpen(false)} />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
